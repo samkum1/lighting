@@ -102,7 +102,7 @@ const Dashboard = () => {
 
           <div className='bg-white flex items-center flex-col pt-[1.75rem] pb-[1rem] px-[1.5rem] rounded-[.74438rem]'>
             <div className="flex items-center justify-center bg-[#0086ff] rounded-[50%] h-[74px] w-[74px] mb-4 p-[0.7rem]">
-              <img src="https://lightningproxies.net/assets/images/icons/user.svg" alt="" />
+              <img src="" alt="" />
             </div>
             <p className='text-[1.30438rem] font-[600]'>user</p>
             <p className='text-[0.91306rem] font-[500] text-[#181818bf]'>56s56d56s5ds6ds6d5s6d56s</p>
