@@ -1,11 +1,52 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { CircularProgressbarWithChildren } from 'react-circular-progressbar'
 import 'react-circular-progressbar/dist/styles.css';
 import { useNavigate } from 'react-router-dom';
 import User from "../assets/User.svg"
+import ApiService from '../api/apiService';
+import { bytesToGB } from '../utils/utils';
 const Dashboard = () => {
 
   const navigate = useNavigate()
+
+  const [username, setUsername] = useState("sahil12345");
+  const [accountInfo, setAccountInfo] = useState(null);
+  const [usernameInfo, setUsernameInfo] = useState(null);
+  const [error, setError] = useState("");
+
+
+  const fetchAccountInfo = async () => {
+    setError("");
+    setAccountInfo(null); 
+
+    try {
+      const response = await ApiService.getAccountInfo(username);
+      setAccountInfo(response.data.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.error || "An error occurred while fetching account info"
+      );
+    }
+  };
+  const fetchUsernameInfo = async () => {
+    setError("");
+    setAccountInfo(null); 
+
+    try {
+      const response = await ApiService.getUsernameInfo(username);
+      setUsernameInfo(response.data.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.error || "An error occurred while fetching username info"
+      );
+    }
+  };
+
+  useEffect(()=> {
+    fetchAccountInfo()
+    fetchUsernameInfo()
+  },[])
+
 
   return (
     <div className='bg-[#F4F6F8] w-full'>
@@ -27,7 +68,7 @@ const Dashboard = () => {
             <div>
               <p className='mt-4 text-[#181818bf] text-[1.125rem] font-[500]'>Active Balance</p>
               <div className='flex justify-between items-center'>
-                <p className='text-[1.75rem] font-[600]'>$10</p>
+                <p className='text-[1.75rem] font-[600]'>${accountInfo?.balance}</p>
                 <button className='bg-[#2fb8511a] border-[0.949px] border-[#2fb851] rounded-[0.59288rem] text-[#2fb851cc] text-[1rem] font-semibold p-[0.5rem_0.62rem] h-[28px] flex items-center hover:bg-[#2fb851cc] hover:text-white'>Add Balance</button>
               </div>
               <div className='flex justify-between items-center border-t border-[#D1E4FF] pt-[1.1rem] mt-[1.1rem]'>
@@ -63,7 +104,7 @@ const Dashboard = () => {
                 <div>
                   <p className='mt-4 text-[#181818bf] text-[1.125rem] font-[500]'>Data Left</p>
                   <div className='flex justify-between items-center'>
-                    <p className='text-[1.75rem] font-[600]'>1181.90GB</p>
+                    <p className='text-[1.75rem] font-[600]'>{bytesToGB(usernameInfo?.bandwidthLeft)} GB</p>
                   </div>
                 </div>
               </div>
@@ -71,9 +112,9 @@ const Dashboard = () => {
                 <div style={{ maxWidth: "8.4rem", maxHeight: "8.4rem" }}>
                   <CircularProgressbarWithChildren
                     strokeWidth={12}
-                    value={0.23}
+                    value={bytesToGB(usernameInfo?.bandwidthLeft)}
                     minValue={0}
-                    maxValue={1}
+                    maxValue={bytesToGB(usernameInfo?.all_buy)}
                     styles={{
                       path: {
                         stroke: `#1675FF`,
@@ -86,7 +127,7 @@ const Dashboard = () => {
                       },
                     }}
                   >
-                    <p className='text-[1.25rem] font-bold'>23%</p>
+                    <p className='text-[1.25rem] font-bold'>{(bytesToGB(usernameInfo?.bandwidthLeft) * 100) / bytesToGB(usernameInfo?.all_buy) }%</p>
                     <p className='text-[1rem] font-[500]'>Data Left</p>
                   </CircularProgressbarWithChildren>
                 </div>
@@ -95,7 +136,7 @@ const Dashboard = () => {
             <div>
               <div className='flex justify-between items-center border-t border-[#D1E4FF] pt-[1.1rem] mt-[1.1rem]'>
                 <p className='text-[16px] font-[500] text-[#181818]'>Total Data Purchased</p>
-                <p className='text-[16px] font-[500]'>5033.30GB</p>
+                <p className='text-[16px] font-[500]'>{bytesToGB(usernameInfo?.all_buy)}GB</p>
               </div>
             </div>
           </div>
@@ -105,7 +146,7 @@ const Dashboard = () => {
               <img src={User} className='w-[30px]' alt="" />
             </div>
             <p className='text-[1.30438rem] font-[600]'>user</p>
-            <p className='text-[0.91306rem] font-[500] text-[#181818bf]'>56s56d56s5ds6ds6d5s6d56s</p>
+            <p className='text-[0.91306rem] font-[500] text-[#181818bf]'>{accountInfo?.account}</p>
             <div className='flex gap-2 mt-4'>
               <img src="https://lightningproxies.net/assets/images/icons/g-01.svg" alt="" />
               <img src="https://lightningproxies.net/assets/images/icons/g-02.svg" alt="" />

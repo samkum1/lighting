@@ -1,7 +1,182 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { CircularProgressbarWithChildren } from 'react-circular-progressbar'
+import ApiService from '../api/apiService';
+import { bytesToGB } from '../utils/utils';
 
 const GenerateProxy = () => {
+    const [username, setUsername] = useState("sahil12345");
+    const [accountInfo, setAccountInfo] = useState(null);
+
+    const [usernameInfo, setUsernameInfo] = useState(null);
+    const [proxyInfo, setProxyInfo] = useState(null);
+    const [stickyProxyInfo, setStickyProxyInfo] = useState(null);
+    const [countryList, setCountryList] = useState([]);
+    const [selectedCountry, setSelectedCountry] = useState("")
+    const [selectedCity, setSelectedCity] = useState()
+    const [stateList, setStateList] = useState([]);
+    const [cityList, setCityList] = useState([]);
+    const [selectedState, setSelectedState] = useState("")
+    const [error, setError] = useState("");
+    const [stickyCounter, setStickyCounter] = useState(20)
+    const [stickyCount, setStickyCount] = useState(20)
+    const [proxies, setProxies] = useState("")
+    const [gbToBeAdded, setGbToBeAdded] = useState(0)
+
+    const fetchUsernameInfo = async () => {
+        try {
+            const response = await ApiService.getUsernameInfo(username);
+            setUsernameInfo(response.data.data);
+        } catch (err) {
+            setError(
+                err.response?.data?.error || "An error occurred while fetching username info"
+            );
+        }
+    };
+
+    const fetchAccountInfo = async () => {
+        try {
+            const response = await ApiService.getAccountInfo(username);
+            setAccountInfo(response.data.data);
+        } catch (err) {
+            setError(
+                err.response?.data?.error || "An error occurred while fetching account info"
+            );
+        }
+    };
+    const addGBToPlan = async () => {
+        let payload = {
+            username: accountInfo?.account,
+            flow: gbToBeAdded,
+            duration: 3
+        }        
+
+        try {
+            const response = await ApiService.addGBToPlan(payload);
+            console.log(response)
+        } catch (err) {
+            setError(
+                err.response?.data?.error || "An error occurred while fetching account info"
+            );
+        }
+    };
+
+    const getProxyList = async (type) => {
+        try {
+            console.log("tes")
+            let payload = {
+                "account": accountInfo?.account,
+                "password": accountInfo?.password,
+                "type": type,
+            }
+            if (selectedCountry) {
+                payload.country_code = selectedCountry.toUpperCase()
+            }
+            if (selectedState) {
+                payload.state = selectedState
+            }
+            if (selectedCity) {
+                payload.city = selectedCity
+            }
+            if (type === "sticky") {
+                payload.time = stickyCounter
+            }
+            const response = await ApiService.getProxyList(payload);
+            if (type === "sticky") {
+                setStickyProxyInfo(response.data.data)
+            }
+            else {
+                setProxyInfo(response.data.data);
+            }
+        } catch (err) {
+            setError(
+                err.response?.data?.error || "An error occurred while fetching username info"
+            );
+        }
+    };
+    const getCountryList = async () => {
+        try {
+            let payload = {}
+            if (selectedState) {
+                payload.country_code = selectedCountry
+                payload.state = selectedState
+            }
+            else if (selectedCountry) {
+                payload.country_code = selectedCountry
+            }
+            const response = await ApiService.getCountryList(payload);
+            if (selectedState) {
+                setCityList(response.data.data)
+            }
+            else if (selectedCountry) {
+                setStateList(response.data.data)
+            } else {
+                setCountryList(response.data.data);
+            }
+        } catch (err) {
+            setError(
+                err.response?.data?.error || "An error occurred while fetching username info"
+            );
+        }
+    };
+
+    useEffect(() => {
+        fetchUsernameInfo()
+        fetchAccountInfo()
+    }, [])
+    useEffect(()=> {
+        handleGenerateProxy()
+    }, [accountInfo])
+    useEffect(() => {
+        getCountryList()
+    }, [selectedCountry, selectedState])
+
+    const handleGenerateProxy = () => {
+        getProxyList("rotating")
+        getProxyList("sticky")
+    }
+
+
+    const generateRandomString = (length) => {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let result = "";
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    };
+
+    const generateProxies = () => {
+        const preFix = stickyProxyInfo?.data?.split("session-")
+        const postFix = stickyProxyInfo?.data?.split("sessTime-")
+        const generatedProxies = Array.from({ length: stickyCount }, () => {
+            const randomSession = generateRandomString(5);
+            return `${preFix?.[0]}session-${randomSession}-sessTime-${postFix?.[1]}`;
+        }).join("\n");
+        setProxies(generatedProxies);
+    };
+
+    useEffect(() => {
+        generateProxies()
+    }, [stickyCount, stickyProxyInfo])
+
+
+    const saveAsTxt = () => {
+        const blob = new Blob([proxies], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "proxies.txt";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const copyProxies = () => {
+        navigator.clipboard
+            .writeText(proxies)
+            .then(() => alert("Proxies copied to clipboard!"))
+            .catch((err) => console.error("Failed to copy text:", err));
+    };
+
     return (
         <div className='bg-[#F4F6F8] w-full'>
             <div className='px-20 pt-5 flex flex-col'>
@@ -68,9 +243,9 @@ const GenerateProxy = () => {
                                 <div className='ml-6 max-w-[8.4rem] max-h-[8.4rem]'>
                                     <CircularProgressbarWithChildren
                                         strokeWidth={14}
-                                        value={0.76}
+                                        value={bytesToGB(usernameInfo?.bandwidthLeft)}
                                         minValue={0}
-                                        maxValue={1}
+                                        maxValue={bytesToGB(usernameInfo?.all_buy)}
                                         styles={{
                                             path: {
                                                 stroke: `#1675FF`,
@@ -83,7 +258,7 @@ const GenerateProxy = () => {
                                             },
                                         }}
                                     >
-                                        <p className='text-[1.25rem] font-bold'>76%</p>
+                                        <p className='text-[1.25rem] font-bold'>{(bytesToGB(usernameInfo?.bandwidthLeft) * 100) / bytesToGB(usernameInfo?.all_buy)}%</p>
                                     </CircularProgressbarWithChildren>
                                 </div>
 
@@ -98,15 +273,15 @@ const GenerateProxy = () => {
 
                                         <p className='mt-4'>Add Bandwidth</p>
                                         <div className='relative mt-1'>
-                                            <input type="text" value={0} className='border px-2 py-1 rounded-md'></input>
+                                            <input type="text" value={gbToBeAdded} onChange={(e)=> setGbToBeAdded(e.target.value)} className='border px-2 py-1 rounded-md'></input>
                                             <p className='absolute bottom-[10%] right-[3%] text-[#2d5897]'>GB</p>
                                         </div>
                                     </div>
                                     <div className='text-right'>
-                                        <p>1.2 GB</p>
-                                        <p className='mt-5'>3.8 GB</p>
+                                        <p>{bytesToGB(usernameInfo?.used)} GB</p>
+                                        <p className='mt-5'>{bytesToGB(usernameInfo?.all_buy)} GB</p>
 
-                                        <button className='mt-[42px] bg-[#1675FF] px-4 text-[white] rounded-[.65019rem] p-[.30rem] font-[600]'>Add</button>
+                                        <button onClick={()=> addGBToPlan()} className='mt-[42px] bg-[#1675FF] px-4 text-[white] rounded-[.65019rem] p-[.30rem] font-[600]'>Add</button>
                                     </div>
                                 </div>
 
@@ -140,11 +315,11 @@ const GenerateProxy = () => {
                                 <div className='flex justify-between'>
                                     <div className='flex flex-col w-[48.5%]'>
                                         <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">Username</label>
-                                        <input type="text" value={"skjbdkjskj"} className='border px-4 py-2 rounded-lg'></input>
+                                        <input type="text" value={accountInfo?.account} className='border px-4 py-2 rounded-lg'></input>
                                     </div>
                                     <div className='flex flex-col w-[48.5%]'>
                                         <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">Password</label>
-                                        <input type="text" value={"skjbdkjskj"} className='border px-4 py-2 rounded-lg'></input>
+                                        <input type="text" value={accountInfo?.password} className='border px-4 py-2 rounded-lg'></input>
                                     </div>
                                 </div>
                                 <div className='flex justify-end'>
@@ -155,25 +330,44 @@ const GenerateProxy = () => {
                                 <div className='flex justify-between mt-5'>
                                     <div className='flex flex-col w-[32%]'>
                                         <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">Country</label>
-                                        <select className='border px-4 py-[11px] rounded-lg'>
-                                            <option value="">Germany</option>
+                                        <select value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)} className='border px-4 py-[11px] rounded-lg'>
+                                            <option value=""></option>
+                                            {
+                                                countryList?.map(country => {
+                                                    return <option value={country.country_code}>{country?.country_name}</option>
+                                                })
+                                            }
                                         </select>
                                     </div>
                                     <div className='flex flex-col w-[32%]'>
                                         <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">State</label>
-                                        <input type="text" value={"skjbdkjskj"} className='border px-4 py-2 rounded-lg'></input>
+                                        <select value={selectedState} onChange={(e) => setSelectedState(e.target.value)} className='border px-4 py-[11px] rounded-lg'>
+                                            {
+                                                stateList?.map(state => {
+                                                    return <option value={state?.state}>{state?.state?.toUpperCase()}</option>
+                                                })
+                                            }
+                                        </select>
                                     </div>
                                     <div className='flex flex-col w-[32%]'>
-                                        <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">City</label>
-                                        <input type="text" value={"skjbdkjskj"} className='border px-4 py-2 rounded-lg'></input>
+                                        <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">State</label>
+                                        <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className='border px-4 py-[11px] rounded-lg'>
+                                            {
+                                                cityList?.map(city => {
+                                                    return <option value={city?.code}>{city?.code?.toUpperCase()}</option>
+                                                })
+                                            }
+                                        </select>
                                     </div>
+
+
                                 </div>
 
                                 <div className='flex justify-between'>
                                     <button className='mt-4 bg-[#1675FF] px-10 text-[white] rounded-[.65019rem] py-3 font-[600]'>
                                         API Generator
                                     </button>
-                                    <button className='mt-4 bg-[#1675FF] px-10 text-[white] rounded-[.65019rem] py-3 font-[600]'>
+                                    <button onClick={() => handleGenerateProxy()} className='mt-4 bg-[#1675FF] px-10 text-[white] rounded-[.65019rem] py-3 font-[600]'>
                                         Update Settings
                                     </button>
                                 </div>
@@ -190,11 +384,11 @@ const GenerateProxy = () => {
                             <div className='flex justify-between'>
                                 <div className='flex flex-col w-[48.5%]'>
                                     <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">Host</label>
-                                    <input type="text" value={"skjbdkjskj"} className='border px-4 py-2 rounded-lg'></input>
+                                    <input type="text" value={proxyInfo?.data?.split(":")?.[0]} className='border px-4 py-2 rounded-lg'></input>
                                 </div>
                                 <div className='flex flex-col w-[48.5%]'>
                                     <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">Port (HTTP & SOCKS5)</label>
-                                    <input type="text" value={"skjbdkjskj"} className='border px-4 py-2 rounded-lg'></input>
+                                    <input type="text" value={proxyInfo?.data?.split(":")?.[1]} className='border px-4 py-2 rounded-lg'></input>
                                 </div>
                             </div>
                         </div>
@@ -202,25 +396,25 @@ const GenerateProxy = () => {
                             <div className='flex justify-between'>
                                 <div className='flex flex-col w-full'>
                                     <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">Rotating Proxy</label>
-                                    <input type="text" value={"skjbdkjskj"} className='border px-4 py-2 rounded-lg'></input>
+                                    <input type="text" value={proxyInfo?.data} className='border px-4 py-2 rounded-lg'></input>
                                 </div>
                             </div>
                         </div>
                         <div className='mx-[1.5rem] bg-[#FAFAFA] px-[1.2rem] pt-[2.5rem] pb-[1.5rem] rounded-lg border mt-3'>
-                            <p className='text-[1.1rem]'>Sticky Sessions ( Session time: 22 min )</p>
-                            <input type="range" className='w-full mt-4' />
+                            <p className='text-[1.1rem]'>Sticky Sessions ( Session time: {stickyCounter} min )</p>
+                            <input value={stickyCounter} onChange={(e) => setStickyCounter(e.target.value)} type="range" className='w-full mt-4' />
                         </div>
                         <div className='mx-[1.5rem] mt-3 flex gap-3 items-center'>
                             <p>Sticky Count:</p>
-                            <input type="text" className="border w-[100px] text-[1.2rem] px-4 py-2 rounded-xl" value={2000} />
+                            <input value={stickyCount} onChange={(e) => setStickyCount(e.target.value)} type="text" className="border w-[100px] text-[1.2rem] px-4 py-2 rounded-xl" />
                         </div>
 
                         <div className='mx-[1.5rem] mt-3 flex gap-3 items-center'>
-                            <textarea name="" className='border w-full rounded-lg' id=""></textarea>
+                            <textarea value={proxies} name="" className='border w-full rounded- p-2 text-[0.9rem]' id=""></textarea>
                         </div>
                         <div className='mx-[1.5rem] flex justify-between mt-3 gap-3 items-center'>
-                            <button className='text-[#1675FF] font-semibold text-[1.2rem]'>Save as .txt</button>
-                            <button className='mt-4 bg-[#1675FF] px-10 text-[white] rounded-[.65019rem] py-3 font-[600]'>
+                            <button onClick={() => saveAsTxt()} className='text-[#1675FF] font-semibold text-[1.2rem]'>Save as .txt</button>
+                            <button onClick={() => copyProxies()} className='mt-4 bg-[#1675FF] px-10 text-[white] rounded-[.65019rem] py-3 font-[600]'>
                                 Copy Proxies
                             </button>
                         </div>
