@@ -62,7 +62,6 @@ const GenerateProxy = () => {
 
     const getProxyList = async (type) => {
         try {
-            console.log("tes")
             let payload = {
                 "account": accountInfo?.account,
                 "password": accountInfo?.password,
@@ -82,10 +81,10 @@ const GenerateProxy = () => {
             }
             const response = await ApiService.getProxyList(payload);
             if (type === "sticky") {
-                setStickyProxyInfo(response.data.data)
+                setStickyProxyInfo(response.data)
             }
             else {
-                setProxyInfo(response.data.data);
+                setProxyInfo(response.data);
             }
         } catch (err) {
             setError(
@@ -105,12 +104,12 @@ const GenerateProxy = () => {
             }
             const response = await ApiService.getCountryList(payload);
             if (selectedState) {
-                setCityList(response.data.data)
+                setCityList(response.data.data.data)
             }
             else if (selectedCountry) {
-                setStateList(response.data.data)
+                setStateList(response.data.data.data)
             } else {
-                setCountryList(response.data.data);
+                setCountryList(response.data.data.data);
             }
         } catch (err) {
             setError(
@@ -124,7 +123,9 @@ const GenerateProxy = () => {
         fetchAccountInfo()
     }, [])
     useEffect(()=> {
-        handleGenerateProxy()
+        if(accountInfo){
+            handleGenerateProxy()
+        }
     }, [accountInfo])
     useEffect(() => {
         getCountryList()
