@@ -53,6 +53,7 @@ const GenerateProxy = () => {
         try {
             const response = await ApiService.addGBToPlan(payload);
             console.log(response)
+            alert("GB's are added")
         } catch (err) {
             setError(
                 err.response?.data?.error || "An error occurred while fetching account info"
