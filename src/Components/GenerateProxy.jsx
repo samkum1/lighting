@@ -252,7 +252,7 @@ const GenerateProxy = () => {
                                             },
                                         }}
                                     >
-                                        <p className='text-[1.25rem] font-bold'>{(bytesToGB(usernameInfo?.bandwidthLeft) * 100) / bytesToGB(usernameInfo?.all_buy)}%</p>
+                                        <p className='text-[1.25rem] font-bold'>{((bytesToGB(usernameInfo?.bandwidthLeft) * 100) / bytesToGB(usernameInfo?.all_buy)).toFixed(2)}%</p>
                                     </CircularProgressbarWithChildren>
                                 </div>
 
