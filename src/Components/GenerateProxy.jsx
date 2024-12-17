@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { CircularProgressbarWithChildren } from 'react-circular-progressbar'
 import ApiService from '../api/apiService';
 import { bytesToGB } from '../utils/utils';
+import AddBandwidthModal from './AddBandwidthModal';
 
 const GenerateProxy = () => {
     const [username, setUsername] = useState("sahil12345");
@@ -21,6 +22,7 @@ const GenerateProxy = () => {
     const [stickyCount, setStickyCount] = useState(20)
     const [proxies, setProxies] = useState("")
     const [gbToBeAdded, setGbToBeAdded] = useState(0)
+    const [showGBModal, setShowGBModal] = useState(false)
 
     const fetchUsernameInfo = async () => {
         try {
@@ -37,23 +39,6 @@ const GenerateProxy = () => {
         try {
             const response = await ApiService.getAccountInfo(username);
             setAccountInfo(response.data.data);
-        } catch (err) {
-            setError(
-                err.response?.data?.error || "An error occurred while fetching account info"
-            );
-        }
-    };
-    const addGBToPlan = async () => {
-        let payload = {
-            username: accountInfo?.account,
-            flow: gbToBeAdded,
-            duration: 3
-        }        
-
-        try {
-            const response = await ApiService.addGBToPlan(payload);
-            console.log(response)
-            alert("GB's are added")
         } catch (err) {
             setError(
                 err.response?.data?.error || "An error occurred while fetching account info"
@@ -123,8 +108,8 @@ const GenerateProxy = () => {
         fetchUsernameInfo()
         fetchAccountInfo()
     }, [])
-    useEffect(()=> {
-        if(accountInfo){
+    useEffect(() => {
+        if (accountInfo) {
             handleGenerateProxy()
         }
     }, [accountInfo])
@@ -148,8 +133,8 @@ const GenerateProxy = () => {
     };
 
     const generateProxies = () => {
-        const preFix = stickyProxyInfo?.data?.split("session-")
-        const postFix = stickyProxyInfo?.data?.split("sessTime-")
+        const preFix = stickyProxyInfo?.data?.split?.("session-")
+        const postFix = stickyProxyInfo?.data?.split?.("sessTime-")
         const generatedProxies = Array.from({ length: stickyCount }, () => {
             const randomSession = generateRandomString(5);
             return `${preFix?.[0]}session-${randomSession}-sessTime-${postFix?.[1]}`;
@@ -182,7 +167,14 @@ const GenerateProxy = () => {
     return (
         <div className='bg-[#F4F6F8] w-full'>
             <div className='px-20 pt-5 flex flex-col'>
-
+                <AddBandwidthModal
+                    showGBModal={showGBModal}
+                    setShowGBModal={setShowGBModal}
+                    accountInfo={accountInfo}
+                    gbToBeAdded={gbToBeAdded}
+                    setGbToBeAdded={setGbToBeAdded}
+                    fetchUsernameInfo={fetchUsernameInfo}
+                />
                 <div className='flex justify-between items-center'>
                     <div>
                         <p className='text-[1.375rem] font-[500]'>Generate Proxy</p>
@@ -275,7 +267,7 @@ const GenerateProxy = () => {
 
                                         <p className='mt-4'>Add Bandwidth</p>
                                         <div className='relative mt-1'>
-                                            <input type="text" value={gbToBeAdded} onChange={(e)=> setGbToBeAdded(e.target.value)} className='border px-2 py-1 rounded-md'></input>
+                                            <input type="text" value={gbToBeAdded} onChange={(e) => setGbToBeAdded(e.target.value)} className='border px-2 py-1 rounded-md'></input>
                                             <p className='absolute bottom-[10%] right-[3%] text-[#2d5897]'>GB</p>
                                         </div>
                                     </div>
@@ -283,7 +275,7 @@ const GenerateProxy = () => {
                                         <p>{bytesToGB(usernameInfo?.used)} GB</p>
                                         <p className='mt-5'>{bytesToGB(usernameInfo?.all_buy)} GB</p>
 
-                                        <button onClick={()=> addGBToPlan()} className='mt-[42px] bg-[#1675FF] px-4 text-[white] rounded-[.65019rem] p-[.30rem] font-[600]'>Add</button>
+                                        <button onClick={() => setShowGBModal(true)} className='mt-[42px] bg-[#1675FF] px-4 text-[white] rounded-[.65019rem] p-[.30rem] font-[600]'>Add</button>
                                     </div>
                                 </div>
 
@@ -386,11 +378,11 @@ const GenerateProxy = () => {
                             <div className='flex justify-between'>
                                 <div className='flex flex-col w-[48.5%]'>
                                     <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">Host</label>
-                                    <input type="text" value={proxyInfo?.data?.split(":")?.[0]} className='border px-4 py-2 rounded-lg'></input>
+                                    <input type="text" value={proxyInfo?.data?.split?.(":")?.[0]} className='border px-4 py-2 rounded-lg'></input>
                                 </div>
                                 <div className='flex flex-col w-[48.5%]'>
                                     <label className='text-[rgba(0,0,0,0.5)]' htmlFor="">Port (HTTP & SOCKS5)</label>
-                                    <input type="text" value={proxyInfo?.data?.split(":")?.[1]} className='border px-4 py-2 rounded-lg'></input>
+                                    <input type="text" value={proxyInfo?.data?.split?.(":")?.[1]} className='border px-4 py-2 rounded-lg'></input>
                                 </div>
                             </div>
                         </div>
